@@ -37,24 +37,26 @@ pub fn render(frame: &mut Frame, app: &App) {
 
 fn render_entry_list(frame: &mut Frame, app: &App, area: Rect) {
     let filtered = app.filtered_entries();
-    
+
     let items: Vec<ListItem> = filtered.iter().enumerate().map(|(i, entry)| {
         let code = if app.show_code && i == app.selected_index {
             if let Ok(code) = generate_code(entry) {
-                format!(" [{}s]", code.period_remaining)
+                // Show asterisks instead of actual code for security
+                let masked = "*".repeat(code.value.len());
+                format!(" [{} | {}s]", masked, code.period_remaining)
             } else {
                 String::new()
             }
         } else {
             String::new()
         };
-        
+
         let note_preview = if entry.note.len() > 30 {
             format!("{}...", &entry.note[..30])
         } else {
             entry.note.clone()
         };
-        
+
         let content = format!(
             "{} | {} | {}{}",
             entry.issuer,
@@ -62,13 +64,13 @@ fn render_entry_list(frame: &mut Frame, app: &App, area: Rect) {
             if note_preview.is_empty() { "(no note)" } else { &note_preview },
             code
         );
-        
+
         ListItem::new(content)
     }).collect();
-    
+
     let list = List::new(items)
         .block(Block::default().title("Entries").borders(Borders::ALL));
-    
+
     frame.render_widget(list, area);
 }
 
