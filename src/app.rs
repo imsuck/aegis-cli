@@ -5,12 +5,14 @@ use nucleo::{Config, Matcher, Utf32Str};
 use ratatui::Terminal;
 use ratatui::backend::CrosstermBackend;
 use std::io::Stdout;
+use uuid::Uuid;
 use zeroize::Zeroizing;
 
 #[derive(Debug)]
 pub struct App {
     pub entries: Vec<Entry>,
-    pub selected_index: usize,
+    /// UUID of the currently selected entry (persists across searches)
+    selected_entry_id: Option<Uuid>,
     pub password: Zeroizing<String>,
     pub search_query: String,
     pub search_mode: bool,
@@ -22,7 +24,7 @@ impl App {
     pub fn new() -> Self {
         Self {
             entries: Vec::new(),
-            selected_index: 0,
+            selected_entry_id: None,
             password: Zeroizing::new(String::new()),
             search_query: String::new(),
             search_mode: false,
@@ -33,10 +35,24 @@ impl App {
 
     pub fn set_entries(&mut self, entries: Vec<Entry>) {
         self.entries = entries;
+        // Select first entry if available
+        if !self.entries.is_empty() {
+            self.selected_entry_id = Some(self.entries[0].uuid);
+        }
     }
 
     pub fn set_password(&mut self, password: String) {
         self.password = Zeroizing::new(password);
+    }
+
+    /// Get the index of the selected entry in the filtered list
+    pub fn get_selected_index(&self) -> usize {
+        let filtered = self.filtered_entries();
+        if let Some(selected_id) = self.selected_entry_id {
+            filtered.iter().position(|e| e.uuid == selected_id).unwrap_or(0)
+        } else {
+            0
+        }
     }
 
     /// Run the main application loop
@@ -78,14 +94,18 @@ impl App {
         self.exit = true;
     }
 
-    fn move_selection(&mut self, delta: isize) {
+    pub fn move_selection(&mut self, delta: isize) {
         let filtered = self.filtered_entries();
         if filtered.is_empty() {
             return;
         }
-        let new_index = (self.selected_index as isize + delta)
+        
+        let current_index = self.get_selected_index();
+        let new_index = (current_index as isize + delta)
             .clamp(0, filtered.len() as isize - 1) as usize;
-        self.selected_index = new_index;
+        
+        // Store the UUID of the newly selected entry
+        self.selected_entry_id = Some(filtered[new_index].uuid);
     }
 
     fn enter_search_mode(&mut self) {
@@ -130,9 +150,17 @@ impl App {
 
     pub fn yank_current_code(&self) -> Option<String> {
         let filtered = self.filtered_entries();
-        filtered.get(self.selected_index)
+        let selected_index = self.get_selected_index();
+        filtered.get(selected_index)
             .and_then(|entry| crate::otp::generate_code(entry).ok())
             .map(|code| code.value)
+    }
+
+    /// Get the currently selected entry
+    pub fn get_selected_entry(&self) -> Option<&Entry> {
+        let filtered = self.filtered_entries();
+        let selected_index = self.get_selected_index();
+        filtered.get(selected_index).copied()
     }
 
     fn filter_by_property<'a>(&'a self, prop: &str, query: &str) -> Vec<&'a Entry> {

@@ -1,8 +1,8 @@
 use ratatui::{
     Frame,
     layout::{Constraint, Direction, Layout, Rect},
-    style::{Color, Style},
-    widgets::{Block, Borders, Clear, List, ListItem, Paragraph},
+    style::{Color, Modifier, Style},
+    widgets::{Block, Borders, Clear, Paragraph, Row, Table},
 };
 use crate::app::App;
 use crate::otp::generate_code;
@@ -24,8 +24,8 @@ impl App {
             .block(Block::default().borders(Borders::ALL));
         frame.render_widget(title, chunks[0]);
         
-        // Entry list
-        Self::render_entry_list(frame, self, chunks[1]);
+        // Entry table
+        self.render_entry_table(frame, chunks[1]);
         
         // Status bar
         Self::render_status_bar(frame, self, chunks[2]);
@@ -36,15 +36,29 @@ impl App {
         }
     }
 
-    fn render_entry_list(frame: &mut Frame, app: &App, area: Rect) {
-        let filtered = app.filtered_entries();
+    fn render_entry_table(&self, frame: &mut Frame, area: Rect) {
+        let filtered = self.filtered_entries();
+        let selected_index = self.get_selected_index();
         
-        let items: Vec<ListItem> = filtered.iter().enumerate().map(|(i, entry)| {
-            let code = if app.show_code && i == app.selected_index {
+        // Calculate max widths for proper column alignment
+        let max_issuer_len = filtered.iter()
+            .map(|e| e.issuer.len())
+            .max()
+            .unwrap_or(0)
+            .min(30); // Cap at 30 chars
+        
+        let max_name_len = filtered.iter()
+            .map(|e| e.name.len())
+            .max()
+            .unwrap_or(0)
+            .min(20); // Cap at 20 chars
+        
+        let rows: Vec<Row> = filtered.iter().enumerate().map(|(i, entry)| {
+            let code_info = if self.show_code && i == selected_index {
                 if let Ok(code) = generate_code(entry) {
                     // Show asterisks instead of actual code for security
                     let masked = "*".repeat(code.value.len());
-                    format!(" [{} | {}s]", masked, code.period_remaining)
+                    format!("{} | {}s", masked, code.period_remaining)
                 } else {
                     String::new()
                 }
@@ -52,27 +66,50 @@ impl App {
                 String::new()
             };
             
-            let note_preview = if entry.note.len() > 30 {
-                format!("{}...", &entry.note[..30])
+            let note_preview = if entry.note.len() > 20 {
+                format!("{}...", &entry.note[..20])
             } else {
                 entry.note.clone()
             };
             
-            let content = format!(
-                "{} | {} | {}{}",
-                entry.issuer,
-                entry.name,
-                if note_preview.is_empty() { "(no note)" } else { &note_preview },
-                code
-            );
+            let style = if i == selected_index {
+                Style::default()
+                    .fg(Color::Yellow)
+                    .add_modifier(Modifier::BOLD)
+            } else {
+                Style::default()
+            };
             
-            ListItem::new(content)
+            Row::new(vec![
+                entry.issuer.clone(),
+                entry.name.clone(),
+                note_preview,
+                code_info,
+            ]).style(style)
         }).collect();
         
-        let list = List::new(items)
-            .block(Block::default().title("Entries").borders(Borders::ALL));
+        // Create table with column widths
+        let widths = vec![
+            Constraint::Length(max_issuer_len as u16 + 2),
+            Constraint::Length(max_name_len as u16 + 2),
+            Constraint::Length(22), // note column
+            Constraint::Length(15), // code column
+        ];
         
-        frame.render_widget(list, area);
+        let table = Table::new(rows, widths)
+            .header(
+                Row::new(vec!["Issuer", "Name", "Note", "Code"])
+                    .style(Style::default().fg(Color::White).add_modifier(Modifier::BOLD))
+                    .bottom_margin(1)
+            )
+            .block(Block::default().title("Entries").borders(Borders::ALL))
+            .row_highlight_style(
+                Style::default()
+                    .add_modifier(Modifier::REVERSED)
+            )
+            .highlight_symbol(">> ");
+        
+        frame.render_widget(table, area);
     }
 
     fn render_status_bar(frame: &mut Frame, app: &App, area: Rect) {
