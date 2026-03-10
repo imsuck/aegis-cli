@@ -2,6 +2,8 @@
 
 A terminal-based TUI for viewing and managing Aegis 2FA vault entries.
 
+**Note:** This is an interactive terminal application that requires a real terminal (TTY) to run.
+
 ## Installation
 
 ```bash
@@ -10,11 +12,13 @@ cargo install --path .
 
 ## Usage
 
+Run the application with your vault file path:
+
 ```bash
 aegis-cli <path-to-vault.json>
 ```
 
-You will be prompted for your vault password.
+You will be prompted for your vault password. After entering the password, the TUI will launch.
 
 ## Keybindings
 
@@ -28,6 +32,7 @@ You will be prompted for your vault password.
 | `c` | Show/hide OTP code |
 | `y` | Yank (copy) OTP code |
 | `q` | Quit |
+| `Ctrl+C` | Force quit (terminal restore may require `reset` command) |
 
 ## Search
 
@@ -50,7 +55,7 @@ Prefix matching: `%is` matches `issuer`, `%nam` matches `name`, etc.
 
 ## Supported OTP Types
 
-- TOTP (RFC 6236)
+- TOTP (RFC 6236) - fully supported
 - HOTP (RFC 4226) - not fully implemented
 - Steam - not fully implemented
 - MOTP - not fully implemented
@@ -66,4 +71,11 @@ aegis-cli /path/to/aegis_encrypted.json
 Password: test
 
 # Navigate with j/k, search with /, show code with c, copy with y
+# Press q to quit
 ```
+
+## Troubleshooting
+
+**"No such device or address" error:** This application requires a real terminal (TTY). It cannot run with piped input or in non-interactive environments.
+
+**Terminal display issues after crash:** Run `reset` to restore your terminal.
