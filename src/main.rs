@@ -7,7 +7,7 @@ mod ui;
 use std::io::{self, stdout, Write};
 use crossterm::{
     execute,
-    terminal::{enable_raw_mode, EnterAlternateScreen},
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use ratatui::{backend::CrosstermBackend, Terminal};
 use app::App;
@@ -43,7 +43,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut terminal = Terminal::new(backend)?;
 
     // Run the application
-    app.run(&mut terminal)?;
+    let res = app.run(&mut terminal);
+
+    // Restore terminal
+    disable_raw_mode()?;
+    execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
+
+    // Check for errors from the app
+    if let Err(err) = res {
+        eprintln!("Error: {:?}", err);
+    }
 
     Ok(())
 }
