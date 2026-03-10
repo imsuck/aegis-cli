@@ -1,4 +1,6 @@
 use crate::vault::Entry;
+use nucleo::pattern::{CaseMatching, Normalization, Pattern};
+use nucleo::{Config, Matcher, Utf32Str};
 use zeroize::Zeroizing;
 
 #[derive(Debug)]
@@ -38,15 +40,69 @@ impl App {
             return self.entries.iter().collect();
         }
         
-        let query = self.search_query.to_lowercase();
+        // Check for property prefix: %<property> <query>
+        if self.search_query.starts_with('%') {
+            let parts: Vec<&str> = self.search_query[1..].splitn(2, ' ').collect();
+            if parts.len() == 2 {
+                let prop = parts[0].to_lowercase();
+                let query = parts[1];
+                return self.filter_by_property(&prop, query);
+            }
+        }
+        
+        // Default: fuzzy search in issuer field using nucleo
+        self.fuzzy_filter_entries(&self.search_query, |e| e.issuer.as_str())
+    }
+    
+    fn filter_by_property<'a>(&'a self, prop: &str, query: &str) -> Vec<&'a Entry> {
+        let mut matcher = Matcher::new(Config::DEFAULT);
+        // Use nucleo for fuzzy matching on the specified property
         self.entries.iter()
             .filter(|e| {
-                e.issuer.to_lowercase().contains(&query) ||
-                e.name.to_lowercase().contains(&query) ||
-                e.note.to_lowercase().contains(&query)
+                // Match property by prefix (e.g., %is matches issuer, %nam matches name)
+                if prop.starts_with("iss") {
+                    return nucleo_match(query, &e.issuer, &mut matcher);
+                }
+                if prop.starts_with("nam") {
+                    return nucleo_match(query, &e.name, &mut matcher);
+                }
+                if prop.starts_with("not") {
+                    return nucleo_match(query, &e.note, &mut matcher);
+                }
+                if prop.starts_with("fav") {
+                    let fav_str = if e.favorite { "true" } else { "false" };
+                    return nucleo_match(query, fav_str, &mut matcher);
+                }
+                if prop.starts_with("typ") {
+                    return nucleo_match(query, &e.entry_type, &mut matcher);
+                }
+                false
             })
             .collect()
     }
+    
+    fn fuzzy_filter_entries<'a, F>(&'a self, query: &str, field_extractor: F) -> Vec<&'a Entry>
+    where
+        F: Fn(&Entry) -> &str,
+    {
+        let mut matcher = Matcher::new(Config::DEFAULT);
+        let pattern = Pattern::new(query, CaseMatching::Ignore, Normalization::Smart, nucleo::pattern::AtomKind::Fuzzy);
+        let mut buf = Vec::new();
+        self.entries.iter()
+            .filter(|e| {
+                buf.clear();
+                let text = Utf32Str::new(field_extractor(e), &mut buf);
+                pattern.indices(text, &mut matcher, &mut Vec::new()).is_some()
+            })
+            .collect()
+    }
+}
+
+fn nucleo_match(pattern: &str, text: &str, matcher: &mut Matcher) -> bool {
+    let p = Pattern::new(pattern, CaseMatching::Ignore, Normalization::Smart, nucleo::pattern::AtomKind::Fuzzy);
+    let mut buf = Vec::new();
+    let text = Utf32Str::new(text, &mut buf);
+    p.indices(text, matcher, &mut Vec::new()).is_some()
 }
 
 impl Default for App {

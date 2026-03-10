@@ -91,8 +91,12 @@ fn render_search_popup(frame: &mut Frame, app: &App) {
     let area = centered_rect(60, 20, frame.area());
     frame.render_widget(Clear, area);
     
+    let help_text = "Properties: %issuer, %name, %note, %favorite, %type";
     let input = Paragraph::new(app.search_query.as_str())
-        .block(Block::default().title("Search (/)").borders(Borders::ALL))
+        .block(Block::default()
+            .title("Search (/)")
+            .title_bottom(help_text)
+            .borders(Borders::ALL))
         .style(Style::default().fg(Color::Yellow));
     
     frame.render_widget(input, area);
