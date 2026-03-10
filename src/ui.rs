@@ -76,7 +76,7 @@ fn render_status_bar(frame: &mut Frame, app: &App, area: Rect) {
     let status = if app.search_mode {
         format!("Search: {} (Esc to cancel)", app.search_query)
     } else if app.show_code {
-        "Press 'y' to yank code, 'c' to hide".to_string()
+        "Press 'y' to yank code, 'c' to hide, 'q' to quit".to_string()
     } else {
         "j/k: navigate | /: search | c: show code | q: quit".to_string()
     };

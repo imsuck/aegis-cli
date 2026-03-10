@@ -54,6 +54,13 @@ impl App {
         self.fuzzy_filter_entries(&self.search_query, |e| e.issuer.as_str())
     }
     
+    pub fn yank_current_code(&self) -> Option<String> {
+        let filtered = self.filtered_entries();
+        filtered.get(self.selected_index)
+            .and_then(|entry| crate::otp::generate_code(entry).ok())
+            .map(|code| code.value)
+    }
+    
     fn filter_by_property<'a>(&'a self, prop: &str, query: &str) -> Vec<&'a Entry> {
         let mut matcher = Matcher::new(Config::DEFAULT);
         // Use nucleo for fuzzy matching on the specified property

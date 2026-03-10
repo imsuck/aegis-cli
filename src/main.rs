@@ -97,6 +97,13 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                 KeyCode::Char('c') => {
                     app.show_code = !app.show_code;
                 }
+                KeyCode::Char('y') if app.show_code => {
+                    if let Some(code) = app.yank_current_code() {
+                        if let Ok(mut clipboard) = arboard::Clipboard::new() {
+                            let _ = clipboard.set_text(&code);
+                        }
+                    }
+                }
                 _ => {}
             }
         }
