@@ -1,3 +1,5 @@
+mod vault;
+
 fn main() {
-    println!("Hello, world!");
+    println!("Aegis CLI");
 }
