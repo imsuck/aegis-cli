@@ -64,50 +64,55 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<()> {
+    use std::time::Duration;
+    
     loop {
         terminal.draw(|f| render(f, app))?;
-        
-        if let Event::Key(key) = event::read()? {
-            match key.code {
-                KeyCode::Char('q') => app.running = false,
-                KeyCode::Char('j') | KeyCode::Down => {
-                    if app.selected_index < app.filtered_entries().len().saturating_sub(1) {
-                        app.selected_index += 1;
-                    }
-                }
-                KeyCode::Char('k') | KeyCode::Up => {
-                    if app.selected_index > 0 {
-                        app.selected_index -= 1;
-                    }
-                }
-                KeyCode::Char('/') => {
-                    app.search_mode = true;
-                    app.search_query.clear();
-                }
-                KeyCode::Esc if app.search_mode => {
-                    app.search_mode = false;
-                    app.search_query.clear();
-                }
-                KeyCode::Enter if app.search_mode => {
-                    app.search_mode = false;
-                }
-                KeyCode::Char(c) if app.search_mode => {
-                    app.search_query.push(c);
-                }
-                KeyCode::Char('c') => {
-                    app.show_code = !app.show_code;
-                }
-                KeyCode::Char('y') if app.show_code => {
-                    if let Some(code) = app.yank_current_code() {
-                        if let Ok(mut clipboard) = arboard::Clipboard::new() {
-                            let _ = clipboard.set_text(&code);
+
+        // Poll for events with 100ms timeout for smooth countdown refresh
+        if event::poll(Duration::from_millis(100))? {
+            if let Event::Key(key) = event::read()? {
+                match key.code {
+                    KeyCode::Char('q') => app.running = false,
+                    KeyCode::Char('j') | KeyCode::Down => {
+                        if app.selected_index < app.filtered_entries().len().saturating_sub(1) {
+                            app.selected_index += 1;
                         }
                     }
+                    KeyCode::Char('k') | KeyCode::Up => {
+                        if app.selected_index > 0 {
+                            app.selected_index -= 1;
+                        }
+                    }
+                    KeyCode::Char('/') => {
+                        app.search_mode = true;
+                        app.search_query.clear();
+                    }
+                    KeyCode::Esc if app.search_mode => {
+                        app.search_mode = false;
+                        app.search_query.clear();
+                    }
+                    KeyCode::Enter if app.search_mode => {
+                        app.search_mode = false;
+                    }
+                    KeyCode::Char(c) if app.search_mode => {
+                        app.search_query.push(c);
+                    }
+                    KeyCode::Char('c') => {
+                        app.show_code = !app.show_code;
+                    }
+                    KeyCode::Char('y') if app.show_code => {
+                        if let Some(code) = app.yank_current_code() {
+                            if let Ok(mut clipboard) = arboard::Clipboard::new() {
+                                let _ = clipboard.set_text(&code);
+                            }
+                        }
+                    }
+                    _ => {}
                 }
-                _ => {}
             }
         }
-        
+
         if !app.running {
             break;
         }
