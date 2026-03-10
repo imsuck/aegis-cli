@@ -54,13 +54,18 @@ impl App {
             .min(20); // Cap at 20 chars
         
         let rows: Vec<Row> = filtered.iter().enumerate().map(|(i, entry)| {
-            let code_info = if self.show_code && i == selected_index {
-                if let Ok(code) = generate_code(entry) {
-                    // Show asterisks instead of actual code for security
-                    let masked = "*".repeat(code.value.len());
-                    format!("{} | {}s", masked, code.period_remaining)
+            let code_info = if self.show_code {
+                if i == selected_index {
+                    // Selected entry: show masked code with timer
+                    if let Ok(code) = generate_code(entry) {
+                        let masked = "*".repeat(code.value.len());
+                        format!("{} | {}s", masked, code.period_remaining)
+                    } else {
+                        String::new()
+                    }
                 } else {
-                    String::new()
+                    // Non-selected entries: show placeholder asterisks
+                    "****** | --s".to_string()
                 }
             } else {
                 String::new()
