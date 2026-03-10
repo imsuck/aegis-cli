@@ -17,36 +17,36 @@ use decrypt::decrypt_vault;
 use std::fs;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Setup terminal
-    enable_raw_mode()?;
-    let mut stdout = stdout();
-    execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
-    let backend = CrosstermBackend::new(stdout);
-    let mut terminal = Terminal::new(backend)?;
-    
-    // Load vault file
+    // Load vault file first
     let vault_path = std::env::args().nth(1)
         .unwrap_or_else(|| "vault.json".to_string());
     let vault_content = fs::read_to_string(&vault_path)?;
-    
-    // Prompt for password
+
+    // Prompt for password BEFORE setting up TUI
     print!("Password: ");
     io::stdout().flush()?;
     let mut password = String::new();
     io::stdin().read_line(&mut password)?;
     let password = password.trim().to_string();
-    
+
     // Decrypt vault
     let decrypted = decrypt_vault(&vault_content, &password)?;
-    
+
+    // Now setup terminal for TUI
+    enable_raw_mode()?;
+    let mut stdout = stdout();
+    execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
+    let backend = CrosstermBackend::new(stdout);
+    let mut terminal = Terminal::new(backend)?;
+
     // Create app
     let mut app = App::new();
     app.set_entries(decrypted.entries);
     app.set_password(password);
-    
+
     // Run TUI
     let result = run_app(&mut terminal, &mut app);
-    
+
     // Restore terminal
     disable_raw_mode()?;
     execute!(
@@ -55,11 +55,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         DisableMouseCapture
     )?;
     terminal.show_cursor()?;
-    
+
     if let Err(err) = result {
         eprintln!("Error: {:?}", err);
     }
-    
+
     Ok(())
 }
 
