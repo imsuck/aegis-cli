@@ -123,9 +123,9 @@ impl App {
         let status = if app.search_mode {
             format!("Search: {} (Esc to cancel)", app.search_query)
         } else if app.show_code {
-            "Press 'y' to yank code, 'c' to hide, 'q' to quit".to_owned()
+            "y: yank code | c: hide | q: quit".to_owned()
         } else {
-            "j/k: navigate | /: search | c: show code | q: quit".to_owned()
+            "j/k: navigate | /: search | c: show code | y: yank | q: quit".to_owned()
         };
 
         let status_widget = Paragraph::new(status).style(Style::default().fg(Color::White));
