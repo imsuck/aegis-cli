@@ -21,7 +21,7 @@ func main() {
 	}
 
 	model := tui.NewModel(vaultPath)
-	p := tea.NewProgram(model)
+	p := tea.NewProgram(model, tea.WithAltScreen())
 
 	if _, err := p.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error running TUI: %v\n", err)
