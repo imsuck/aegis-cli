@@ -13,6 +13,12 @@ Terminal-based TUI client for Aegis authenticator vaults with passwords.
 - Fuzzy search from issuer, account name, notes
 - Color-coded timer (wow eye candy!)
 
+## Building
+
+```bash
+go build -o aegis-cli ./cmd/aegis-cli
+```
+
 ## Usage
 
 ```bash
