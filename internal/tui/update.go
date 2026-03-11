@@ -45,8 +45,6 @@ func (m Model) handleKeyPress(key tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m.handleTableKey(key)
 	case ModeSearch:
 		return m.handleSearchKey(key)
-	case ModeCodeDisplay:
-		return m.handleCodeDisplayKey(key)
 	}
 	return m, nil
 }
@@ -86,7 +84,7 @@ func (m Model) handleTableKey(key tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.searchInput.Focus()
 		return m, textinput.Blink
 	case "c":
-		m.mode = ModeCodeDisplay
+		m.showCodes = !m.showCodes
 		return m, nil
 	case "y":
 		if len(m.filteredEntries) > 0 {
@@ -121,29 +119,6 @@ func (m Model) handleSearchKey(key tea.KeyMsg) (tea.Model, tea.Cmd) {
 	m.cursor = 0
 
 	return m, cmd
-}
-
-func (m Model) handleCodeDisplayKey(key tea.KeyMsg) (tea.Model, tea.Cmd) {
-	switch key.String() {
-	case "q", "ctrl+c":
-		return m, tea.Quit
-	case "esc", "c":
-		m.mode = ModeTable
-		return m, nil
-	case "j", "down":
-		if m.cursor < len(m.filteredEntries)-1 {
-			m.cursor++
-		}
-	case "k", "up":
-		if m.cursor > 0 {
-			m.cursor--
-		}
-	case "y":
-		if len(m.filteredEntries) > 0 {
-			return m, copyToClipboard(m.getCodeForEntry(m.cursor))
-		}
-	}
-	return m, nil
 }
 
 func (m Model) handleTick(t TickMsg) (tea.Model, tea.Cmd) {

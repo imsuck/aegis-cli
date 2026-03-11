@@ -14,7 +14,6 @@ const (
 	ModePassword Mode = iota
 	ModeTable
 	ModeSearch
-	ModeCodeDisplay
 )
 
 // Model represents the TUI application state
@@ -27,6 +26,7 @@ type Model struct {
 	vaultPath       string
 	lastCopyTime    time.Time
 	copySuccess     bool
+	showCodes       bool
 
 	// Password input
 	passwordInput textinput.Model

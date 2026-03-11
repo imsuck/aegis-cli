@@ -49,8 +49,6 @@ func (m Model) View() string {
 		return m.tableView()
 	case ModeSearch:
 		return m.searchView()
-	case ModeCodeDisplay:
-		return m.codeDisplayView()
 	default:
 		return "Unknown mode"
 	}
@@ -104,7 +102,11 @@ func (m Model) tableView() string {
 	}
 
 	b.WriteString("\n")
-	b.WriteString(dimStyle.Render("j/k: navigate • y: copy code • /: search • c: code view • q: quit"))
+	if m.showCodes {
+		b.WriteString(dimStyle.Render("j/k: navigate • y: copy • /: search • c: hide codes • q: quit"))
+	} else {
+		b.WriteString(dimStyle.Render("j/k: navigate • y: copy • /: search • c: show codes • q: quit"))
+	}
 
 	return b.String()
 }
@@ -173,33 +175,6 @@ func (m Model) searchView() string {
 	return b.String()
 }
 
-func (m Model) codeDisplayView() string {
-	var b strings.Builder
-
-	if len(m.filteredEntries) == 0 {
-		return "No entries"
-	}
-
-	entry := m.filteredEntries[m.cursor]
-	code := m.getCodeForEntry(m.cursor)
-	remaining := m.getRemainingTime(m.cursor)
-
-	b.WriteString(titleStyle.Render("Code Display"))
-	b.WriteString("\n\n")
-	b.WriteString(fmt.Sprintf("Issuer: %s\n", entry.Issuer))
-	b.WriteString(fmt.Sprintf("Name:   %s\n", entry.Name))
-	if entry.Note != "" {
-		b.WriteString(fmt.Sprintf("Note:   %s\n", entry.Note))
-	}
-	b.WriteString("\n")
-	b.WriteString(fmt.Sprintf("Code: %s\n", codeStyle.Render(code)))
-	b.WriteString(fmt.Sprintf("Refreshes in: %s\n", formatTimer(remaining)))
-	b.WriteString("\n\n")
-	b.WriteString(dimStyle.Render("y: copy • j/k: navigate • esc/c: back to table • q: quit"))
-
-	return b.String()
-}
-
 func truncate(s string, max int) string {
 	if len(s) > max {
 		return s[:max-3] + "..."
@@ -221,10 +196,18 @@ func formatTimer(remaining int) string {
 }
 
 // getCodeForEntry generates the current TOTP code for an entry
+// When showCodes is false, all codes are masked
+// When showCodes is true, only the selected entry shows its code
 func (m Model) getCodeForEntry(index int) string {
 	if index < 0 || index >= len(m.filteredEntries) {
 		return "------"
 	}
+	
+	// Mask codes when showCodes is disabled, or when entry is not selected
+	if !m.showCodes || index != m.cursor {
+		return "******"
+	}
+	
 	code, err := totp.Generate(m.filteredEntries[index], m.lastUpdate)
 	if err != nil {
 		return "ERROR"
