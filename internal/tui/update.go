@@ -24,6 +24,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.handleTick(msg)
 	case passwordSubmittedMsg:
 		return m.handlePasswordSubmit(string(msg))
+	case vaultLoadedMsg:
+		return m.handleVaultLoaded(msg)
+	case vaultErrorMsg:
+		return m.handleVaultError(msg)
 	}
 
 	return m, nil
@@ -144,9 +148,24 @@ func (m Model) handleTick(t TickMsg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) handlePasswordSubmit(password string) (tea.Model, tea.Cmd) {
-	// This will be handled by the main program
-	// For now, just return a message
-	return m, loadVault(m.vaultPath, password)
+	// Start loading the vault
+	return m, loadVaultAsync(m.vaultPath, password)
+}
+
+func (m Model) handleVaultLoaded(msg vaultLoadedMsg) (tea.Model, tea.Cmd) {
+	m.content = msg.content
+	m.entries = msg.content.Entries
+	m.filteredEntries = msg.content.Entries
+	m.mode = ModeTable
+	m.cursor = 0
+	return m, tick()
+}
+
+func (m Model) handleVaultError(msg vaultErrorMsg) (tea.Model, tea.Cmd) {
+	m.err = msg.err
+	m.passwordInput.SetValue("")
+	m.passwordInput.Placeholder = "Wrong password, try again"
+	return m, nil
 }
 
 // filterEntries filters entries based on search query
@@ -211,16 +230,23 @@ func submitPassword(password string) tea.Cmd {
 
 type passwordSubmittedMsg string
 
-// loadVault returns a command to load and decrypt the vault
-func loadVault(path, password string) tea.Cmd {
+// loadVaultAsync returns a command to load and decrypt the vault asynchronously
+func loadVaultAsync(path, password string) tea.Cmd {
 	return func() tea.Msg {
-		return vaultLoadMsg{path: path, password: password}
+		result, err := vault.LoadAndDecrypt(path, password)
+		if err != nil {
+			return vaultErrorMsg{err: err}
+		}
+		return vaultLoadedMsg{content: &result.Content}
 	}
 }
 
-type vaultLoadMsg struct {
-	path     string
-	password string
+type vaultLoadedMsg struct {
+	content *vault.Content
+}
+
+type vaultErrorMsg struct {
+	err error
 }
 
 // copyToClipboard returns a command to copy text to clipboard
