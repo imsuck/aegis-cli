@@ -1,16 +1,18 @@
 package vault
 
+import "encoding/json"
+
 // Vault represents the top-level Aegis vault structure
 type Vault struct {
-	Version int    `json:"version"`
-	Header  Header `json:"header"`
-	DB      string `json:"db"` // Base64 encoded when encrypted
+	Version int             `json:"version"`
+	Header  Header          `json:"header"`
+	DB      json.RawMessage `json:"db"` // Can be Base64 string (encrypted) or JSON object (unencrypted)
 }
 
 // Header contains encryption parameters and key slots
 type Header struct {
-	Slots  []Slot `json:"slots"`
-	Params Params `json:"params"`
+	Slots  []Slot  `json:"slots"`
+	Params *Params `json:"params"` // Pointer to handle null for unencrypted vaults
 }
 
 // Slot represents a credential slot for vault decryption
@@ -23,6 +25,7 @@ type Slot struct {
 	R         int       `json:"r"` // scrypt r parameter
 	P         int       `json:"p"` // scrypt p parameter
 	Salt      string    `json:"salt"` // Hex encoded
+	Repaired  bool      `json:"repaired,omitempty"`
 }
 
 // KeyParams holds AES-GCM nonce and tag
