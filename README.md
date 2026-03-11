@@ -65,7 +65,7 @@ You will be prompted to enter your vault password.
 | `j` / `↓`      | Move down              |
 | `k` / `↑`      | Move up                |
 | `g`            | Go to top              |
-| `g`            | Go to bottom           |
+| `G`            | Go to bottom           |
 | `/`            | Open search            |
 | `c`            | Toggle code display    |
 | `y`            | Copy code to clipboard |
