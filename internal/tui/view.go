@@ -157,7 +157,11 @@ func (m Model) searchView() string {
 
 	b.WriteString(titleStyle.Render("Search"))
 	b.WriteString("\n\n")
-	b.WriteString("Type to filter entries (Esc to cancel):\n\n")
+	if m.searchInput.Value() != "" {
+		b.WriteString(fmt.Sprintf("Current filter: \"%s\"\n\n", m.searchInput.Value()))
+	} else {
+		b.WriteString("Type to filter entries (Esc to clear):\n\n")
+	}
 	b.WriteString(m.searchInput.View())
 	b.WriteString("\n\n")
 

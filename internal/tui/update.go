@@ -80,7 +80,7 @@ func (m Model) handleTableKey(key tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.cursor = len(m.filteredEntries) - 1
 	case "/":
 		m.mode = ModeSearch
-		m.searchInput.SetValue("")
+		m.searchInput.SetValue(m.searchInput.Value())
 		m.searchInput.Focus()
 		return m, textinput.Blink
 	case "c":
