@@ -3,6 +3,7 @@ package tui
 import (
 	"time"
 
+	"github.com/atotto/clipboard"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"aegis-cli/internal/vault"
@@ -29,6 +30,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.handleVaultLoaded(msg)
 	case vaultErrorMsg:
 		return m.handleVaultError(msg)
+	case copyMsg:
+		return m.handleCopyResult(msg)
 	}
 
 	return m, nil
@@ -169,6 +172,12 @@ func (m Model) handleVaultError(msg vaultErrorMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+func (m Model) handleCopyResult(msg copyMsg) (tea.Model, tea.Cmd) {
+	m.copySuccess = msg.success
+	m.lastCopyTime = time.Now()
+	return m, nil
+}
+
 // filterEntries filters entries based on search query
 func filterEntries(entries []vault.Entry, query string) []vault.Entry {
 	return search.SearchEntries(entries, query)
@@ -212,10 +221,13 @@ type vaultErrorMsg struct {
 // copyToClipboard returns a command to copy text to clipboard
 func copyToClipboard(text string) tea.Cmd {
 	return func() tea.Msg {
-		return copyMsg{text: text}
+		err := clipboard.WriteAll(text)
+		return copyMsg{text: text, success: err == nil, err: err}
 	}
 }
 
 type copyMsg struct {
-	text string
+	text    string
+	success bool
+	err     error
 }
