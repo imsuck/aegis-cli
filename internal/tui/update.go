@@ -165,6 +165,15 @@ func deleteWordBackward(s string) string {
 
 func (m Model) handleTick(t TickMsg) (tea.Model, tea.Cmd) {
 	m.lastUpdate = time.Time(t)
+	
+	// Check if timeout has been exceeded
+	if m.timeout > 0 {
+		elapsed := time.Since(m.lastActivity)
+		if elapsed >= m.timeout {
+			return m, tea.Quit
+		}
+	}
+	
 	return m, tick()
 }
 
