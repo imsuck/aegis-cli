@@ -83,7 +83,7 @@ func (m Model) tableView() string {
 		"ISSUER", "NAME", "NOTE", "CODE", "TIME")
 	b.WriteString(dimStyle.Render(header))
 	b.WriteString("\n")
-	b.WriteString(strings.Repeat("─", 70))
+	b.WriteString(strings.Repeat("─", 78))
 	b.WriteString("\n")
 
 	// Entries
@@ -120,7 +120,7 @@ func (m Model) formatEntryRow(entry vault.Entry, index int) string {
 		note = note[:15] + "..."
 	}
 
-	return fmt.Sprintf("%-20s %-20s %-20s %-10s %-6s",
+	return fmt.Sprintf("%-20s %-20s %-20s %-20s %-6s",
 		truncate(entry.Issuer, 20),
 		truncate(entry.Name, 20),
 		truncate(note, 20),
@@ -143,7 +143,7 @@ func (m Model) formatSelectedRow(entry vault.Entry, index int) string {
 		Bold(true).
 		Foreground(lipgloss.Color("0"))
 
-	return fmt.Sprintf("%-20s %-20s %-20s %-10s %-6s",
+	return fmt.Sprintf("%-20s %-20s %-20s %-20s %-6s",
 		truncate(entry.Issuer, 20),
 		truncate(entry.Name, 20),
 		truncate(note, 20),
@@ -171,6 +171,9 @@ func (m Model) searchView() string {
 	if len(m.filteredEntries) == 0 {
 		b.WriteString(dimStyle.Render("No matches found"))
 	}
+
+	b.WriteString("\n")
+	b.WriteString(dimStyle.Render("y: copy • Enter: accept • Esc: cancel"))
 
 	return b.String()
 }
@@ -219,6 +222,21 @@ func (m Model) getCodeForEntry(index int) string {
 	code, err := totp.Generate(entry, m.lastUpdate)
 	if err != nil {
 		return "ERROR"
+	}
+	return code
+}
+
+// getActualCodeForEntry returns the actual TOTP code for clipboard copy
+// This always returns the real code, regardless of showCodes setting
+func (m Model) getActualCodeForEntry(index int) string {
+	if index < 0 || index >= len(m.filteredEntries) {
+		return ""
+	}
+	
+	entry := m.filteredEntries[index]
+	code, err := totp.Generate(entry, m.lastUpdate)
+	if err != nil {
+		return ""
 	}
 	return code
 }

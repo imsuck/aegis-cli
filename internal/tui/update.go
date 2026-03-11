@@ -88,7 +88,7 @@ func (m Model) handleTableKey(key tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case "y":
 		if len(m.filteredEntries) > 0 {
-			return m, copyToClipboard(m.getCodeForEntry(m.cursor))
+			return m, copyToClipboard(m.getActualCodeForEntry(m.cursor))
 		}
 	}
 	return m, nil
@@ -107,6 +107,13 @@ func (m Model) handleSearchKey(key tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case tea.KeyCtrlC:
 		return m, tea.Quit
+	}
+
+	switch key.String() {
+	case "y":
+		if len(m.filteredEntries) > 0 {
+			return m, copyToClipboard(m.getActualCodeForEntry(m.cursor))
+		}
 	}
 
 	// Update search input
