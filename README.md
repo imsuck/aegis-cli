@@ -3,7 +3,7 @@
 > [!Note]
 > This was written entirely by an LLM.
 >
-> Just a heads-up if you are uncomfortable using LLM-generated code.
+> Just a heads-up if you are uncomfortable with using LLM-generated code.
 
 Terminal-based TUI client for Aegis authenticator vaults with passwords.
 
@@ -92,6 +92,10 @@ go test ./... -v
 # Run integration tests with test vault (password: test)
 go test ./tests/integration/... -v
 ```
+
+## TODO
+
+- [Support more OTP types](https://github.com/beemdevelopment/Aegis/blob/59d5c640d6a2d0d16f243dbdd735758eed65bc63/app/src/main/java/com/beemdevelopment/aegis/crypto/otp/OTP.java): HTOP, Steam, MOTP, Yandex
 
 ## License
 
