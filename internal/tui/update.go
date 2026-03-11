@@ -107,6 +107,12 @@ func (m Model) handleSearchKey(key tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case tea.KeyCtrlC:
 		return m, tea.Quit
+	case tea.KeyCtrlW, tea.KeyCtrlH:
+		// Delete word backward (ctrl+w and ctrl+backspace)
+		m.searchInput.SetValue(deleteWordBackward(m.searchInput.Value()))
+		var cmd tea.Cmd
+		m.searchInput, cmd = m.searchInput.Update(key)
+		return m, cmd
 	}
 
 	switch key.String() {
@@ -126,6 +132,29 @@ func (m Model) handleSearchKey(key tea.KeyMsg) (tea.Model, tea.Cmd) {
 	m.cursor = 0
 
 	return m, cmd
+}
+
+// deleteWordBackward deletes the word before the cursor
+func deleteWordBackward(s string) string {
+	if len(s) == 0 {
+		return s
+	}
+	
+	// Find the end (cursor position)
+	end := len(s)
+	
+	// Skip trailing spaces
+	for end > 0 && s[end-1] == ' ' {
+		end--
+	}
+	
+	// Find the start of the word
+	start := end
+	for start > 0 && s[start-1] != ' ' {
+		start--
+	}
+	
+	return s[:start] + s[end:]
 }
 
 func (m Model) handleTick(t TickMsg) (tea.Model, tea.Cmd) {
