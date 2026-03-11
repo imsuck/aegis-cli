@@ -6,6 +6,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"aegis-cli/internal/vault"
+	"aegis-cli/internal/search"
 )
 
 // Init initializes the TUI model
@@ -170,48 +171,7 @@ func (m Model) handleVaultError(msg vaultErrorMsg) (tea.Model, tea.Cmd) {
 
 // filterEntries filters entries based on search query
 func filterEntries(entries []vault.Entry, query string) []vault.Entry {
-	if query == "" {
-		return entries
-	}
-
-	result := []vault.Entry{}
-	for _, entry := range entries {
-		searchable := entry.Issuer + " " + entry.Name + " " + entry.Note
-		if containsIgnoreCase(searchable, query) {
-			result = append(result, entry)
-		}
-	}
-	return result
-}
-
-func containsIgnoreCase(s, substr string) bool {
-	return len(s) >= len(substr) && 
-		(len(substr) == 0 || 
-			findSubstring(s, substr))
-}
-
-func findSubstring(s, substr string) bool {
-	s = toLower(s)
-	substr = toLower(substr)
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
-}
-
-func toLower(s string) string {
-	result := make([]byte, len(s))
-	for i := 0; i < len(s); i++ {
-		c := s[i]
-		if c >= 'A' && c <= 'Z' {
-			result[i] = c + 32
-		} else {
-			result[i] = c
-		}
-	}
-	return string(result)
+	return search.SearchEntries(entries, query)
 }
 
 // tick returns a command that sends a TickMsg every second
