@@ -40,15 +40,14 @@ impl App {
         let filtered = self.filtered_entries();
         let selected_index = self.get_selected_index();
 
-        // Pre-compute codes for all entries in a single pass
-        let codes: Vec<Option<(String, u64)>> = filtered
-            .iter()
-            .map(|entry| {
-                generate_code(entry)
-                    .ok()
-                    .map(|code| (code.value, code.period_remaining))
+        // Only compute code for selected entry when show_code is enabled
+        let selected_code = if self.show_code {
+            filtered.get(selected_index).and_then(|entry| {
+                generate_code(entry).ok().map(|code| (code.value, code.period_remaining))
             })
-            .collect();
+        } else {
+            None
+        };
 
         // Calculate max widths for proper column alignment (single pass)
         let (max_issuer_len, max_name_len) =
@@ -64,7 +63,7 @@ impl App {
             .enumerate()
             .map(|(i, entry)| {
                 let code_info = if self.show_code && i == selected_index {
-                    if let Some((value, period)) = &codes[i] {
+                    if let Some((value, period)) = &selected_code {
                         let masked = "*".repeat(value.len());
                         format!("{} | {}s", masked, period)
                     } else {
