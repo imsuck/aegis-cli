@@ -3,6 +3,7 @@ package tui
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/lipgloss"
 	"aegis-cli/internal/vault"
@@ -67,6 +68,10 @@ func (m Model) passwordView() string {
 	b.WriteString("\n\n")
 	b.WriteString(dimStyle.Render("Press Enter to unlock, Ctrl+C to quit"))
 
+	if m.warningShown {
+		b.WriteString(m.formatTimeoutWarning())
+	}
+
 	return b.String()
 }
 
@@ -99,6 +104,10 @@ func (m Model) tableView() string {
 		b.WriteString("\n")
 	}
 
+	b.WriteString("\n")
+	if m.warningShown {
+		b.WriteString(m.formatTimeoutWarning())
+	}
 	b.WriteString("\n")
 	if m.showCodes {
 		b.WriteString(dimStyle.Render("j/k: navigate • y: copy • /: search • c: hide codes • q: quit"))
@@ -152,6 +161,10 @@ func (m Model) searchView() string {
 		b.WriteString(dimStyle.Render("No matches found"))
 	}
 
+	b.WriteString("\n")
+	if m.warningShown {
+		b.WriteString(m.formatTimeoutWarning())
+	}
 	b.WriteString("\n")
 	b.WriteString(dimStyle.Render("y: copy • Enter: accept • Esc: cancel"))
 
@@ -226,4 +239,26 @@ func (m Model) getRemainingTime(index int) int {
 		return 0
 	}
 	return totp.GetRemainingTime(m.filteredEntries[index], m.lastUpdate)
+}
+
+// formatTimeoutWarning returns a warning message if timeout is near
+func (m Model) formatTimeoutWarning() string {
+	if m.timeout <= 0 {
+		return ""
+	}
+	
+	elapsed := time.Since(m.lastActivity)
+	remaining := m.timeout - elapsed
+	
+	if remaining <= 0 {
+		return ""
+	}
+	
+	if remaining <= 10*time.Second {
+		return fmt.Sprintf("\n\n%s", 
+			errorStyle.Render(fmt.Sprintf("⚠ Auto-exit in %d seconds (press any key to stay)", 
+				int(remaining.Seconds()))))
+	}
+	
+	return ""
 }

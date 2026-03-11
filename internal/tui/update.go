@@ -169,8 +169,17 @@ func (m Model) handleTick(t TickMsg) (tea.Model, tea.Cmd) {
 	// Check if timeout has been exceeded
 	if m.timeout > 0 {
 		elapsed := time.Since(m.lastActivity)
-		if elapsed >= m.timeout {
+		remaining := m.timeout - elapsed
+		
+		if remaining <= 0 {
 			return m, tea.Quit
+		}
+		
+		// Show warning in last 10 seconds
+		if remaining <= 10*time.Second {
+			m.warningShown = true
+		} else {
+			m.warningShown = false
 		}
 	}
 	
