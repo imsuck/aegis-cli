@@ -205,12 +205,18 @@ func (m Model) getCodeForEntry(index int) string {
 		return "------"
 	}
 	
-	// Mask codes when showCodes is disabled, or when entry is not selected
-	if !m.showCodes || index != m.cursor {
-		return "******"
+	entry := m.filteredEntries[index]
+	digits := entry.Info.Digits
+	if digits == 0 {
+		digits = 6
 	}
 	
-	code, err := totp.Generate(m.filteredEntries[index], m.lastUpdate)
+	// Mask codes when showCodes is disabled, or when entry is not selected
+	if !m.showCodes || index != m.cursor {
+		return strings.Repeat("*", digits)
+	}
+	
+	code, err := totp.Generate(entry, m.lastUpdate)
 	if err != nil {
 		return "ERROR"
 	}
