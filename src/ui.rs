@@ -40,27 +40,36 @@ impl App {
         let filtered = self.filtered_entries();
         let selected_index = self.get_selected_index();
 
+        // Pre-compute codes for all entries in a single pass
+        let codes: Vec<Option<(String, u64)>> = filtered
+            .iter()
+            .map(|entry| {
+                generate_code(entry)
+                    .ok()
+                    .map(|code| (code.value, code.period_remaining))
+            })
+            .collect();
+
         // Calculate max widths for proper column alignment (single pass)
-        let (max_issuer_len, max_name_len) = filtered.iter().fold((0, 0), |(max_iss, max_name), e| {
-            (max_iss.max(e.issuer.len().min(30)), max_name.max(e.name.len().min(20)))
-        });
+        let (max_issuer_len, max_name_len) =
+            filtered.iter().fold((0, 0), |(max_iss, max_name), e| {
+                (
+                    max_iss.max(e.issuer.len().min(30)),
+                    max_name.max(e.name.len().min(20)),
+                )
+            });
 
         let rows: Vec<Row> = filtered
             .iter()
             .enumerate()
             .map(|(i, entry)| {
-                // Only generate code for selected entry when show_code is enabled
-                // For other entries, use static placeholder to avoid crypto overhead
                 let code_info = if self.show_code && i == selected_index {
-                    if let Ok(code) = generate_code(entry) {
-                        let masked = "*".repeat(code.value.len());
-                        format!("{} | {}s", masked, code.period_remaining)
+                    if let Some((value, period)) = &codes[i] {
+                        let masked = "*".repeat(value.len());
+                        format!("{} | {}s", masked, period)
                     } else {
                         "****** | --s".to_owned()
                     }
-                } else if self.show_code {
-                    // Non-selected entries: static placeholder (no crypto call)
-                    "****** | --s".to_owned()
                 } else {
                     String::new()
                 };
@@ -93,7 +102,7 @@ impl App {
         let widths = vec![
             Constraint::Length(max_issuer_len as u16 + 2),
             Constraint::Length(max_name_len as u16 + 2),
-            Constraint::Length(22),  // note column
+            Constraint::Length(22), // note column
             Constraint::Length(15), // code column
         ];
 
