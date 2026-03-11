@@ -7,18 +7,19 @@ A terminal-based TUI for viewing and managing Aegis 2FA vault entries.
 ## Installation
 
 ```bash
-cargo install --path .
+# For best performance, always install in release mode
+cargo install --path --locked --release .
 ```
 
 ## Usage
-
-Run the application with your vault file path:
 
 ```bash
 aegis-cli <path-to-vault.json>
 ```
 
-You will be prompted for your vault password. After entering the password, the TUI will launch.
+You will be prompted for your vault password (input is hidden with asterisks).
+
+**Important:** Always use the release build (`cargo build --release`) for production use. Debug builds are 10-100x slower for cryptographic operations like scrypt.
 
 ## Keybindings
 
