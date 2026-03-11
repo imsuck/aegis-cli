@@ -39,11 +39,14 @@ type Model struct {
 	filteredEntries []vault.Entry
 
 	// Timing
-	lastUpdate time.Time
+	lastUpdate     time.Time
+	lastActivity   time.Time
+	timeout        time.Duration
+	warningShown   bool
 }
 
 // NewModel creates a new TUI model
-func NewModel(vaultPath string) Model {
+func NewModel(vaultPath string, timeout time.Duration) Model {
 	// Setup password input
 	ti := textinput.New()
 	ti.Placeholder = "Enter vault password"
@@ -56,11 +59,12 @@ func NewModel(vaultPath string) Model {
 	si.Placeholder = "Search entries..."
 
 	return Model{
-		mode:          ModePassword,
-		vaultPath:     vaultPath,
-		passwordInput: ti,
-		searchInput:   si,
-		lastUpdate:    time.Now(),
+		mode:            ModePassword,
+		vaultPath:       vaultPath,
+		passwordInput:   ti,
+		searchInput:     si,
+		lastActivity:    time.Now(),
+		timeout:         timeout,
 		filteredEntries: []vault.Entry{},
 	}
 }
