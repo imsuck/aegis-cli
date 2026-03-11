@@ -12,32 +12,34 @@ import (
 var (
 	titleStyle = lipgloss.NewStyle().
 			Bold(true).
-			Foreground(lipgloss.Color("205")).
+			Foreground(lipgloss.Color("9")).
 			Padding(0, 1)
 
 	selectedStyle = lipgloss.NewStyle().
-			Background(lipgloss.Color("212")).
+			Bold(true).
 			Foreground(lipgloss.Color("0")).
+			Background(lipgloss.Color("13")).
 			Padding(0, 1)
 
 	dimStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("241"))
+			Foreground(lipgloss.Color("8"))
 
 	codeStyle = lipgloss.NewStyle().
 			Bold(true).
-			Foreground(lipgloss.Color("82"))
+			Foreground(lipgloss.Color("10"))
 
 	timerGoodStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("82"))
+			Foreground(lipgloss.Color("10"))
 
 	timerWarnStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("208"))
+			Foreground(lipgloss.Color("11"))
 
 	timerBadStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("196"))
+			Foreground(lipgloss.Color("1"))
 
 	errorStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("196"))
+			Bold(true).
+			Foreground(lipgloss.Color("1"))
 )
 
 func (m Model) View() string {
