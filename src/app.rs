@@ -1,12 +1,21 @@
 use crate::vault::Entry;
+use arboard::Clipboard;
 use crossterm::event::{self, Event, KeyCode, KeyEventKind};
 use nucleo::pattern::{CaseMatching, Normalization, Pattern};
 use nucleo::{Config, Matcher, Utf32Str};
-use ratatui::Terminal;
 use ratatui::backend::CrosstermBackend;
+use ratatui::Terminal;
 use std::io::Stdout;
 use uuid::Uuid;
 use zeroize::Zeroizing;
+
+struct ClipboardWrap(Clipboard);
+
+impl std::fmt::Debug for ClipboardWrap {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("")
+    }
+}
 
 #[derive(Debug)]
 pub struct App {
@@ -18,6 +27,7 @@ pub struct App {
     pub search_mode: bool,
     pub show_code: bool,
     exit: bool,
+    clipboard: ClipboardWrap,
 }
 
 impl App {
@@ -30,6 +40,7 @@ impl App {
             search_mode: false,
             show_code: false,
             exit: false,
+            clipboard: ClipboardWrap(Clipboard::new().expect("Failed to create clipboard")),
         }
     }
 
@@ -49,7 +60,10 @@ impl App {
     pub fn get_selected_index(&self) -> usize {
         let filtered = self.filtered_entries();
         if let Some(selected_id) = self.selected_entry_id {
-            filtered.iter().position(|e| e.uuid == selected_id).unwrap_or(0)
+            filtered
+                .iter()
+                .position(|e| e.uuid == selected_id)
+                .unwrap_or(0)
         } else {
             0
         }
@@ -68,22 +82,53 @@ impl App {
         if event::poll(std::time::Duration::from_millis(100))? {
             if let Event::Key(key) = event::read()? {
                 if key.kind == KeyEventKind::Press {
-                    self.handle_key_event(key.code);
+                    self.handle_key_event(key);
                 }
             }
         }
         Ok(())
     }
 
-    fn handle_key_event(&mut self, key: KeyCode) {
-        match key {
+    fn handle_key_event(&mut self, key: crossterm::event::KeyEvent) {
+        use crossterm::event::{KeyCode, KeyModifiers};
+        
+        // Handle search mode keys
+        if self.search_mode {
+            match key.code {
+                KeyCode::Esc => self.exit_search_mode(),
+                KeyCode::Enter => self.exit_search_mode(),
+                KeyCode::Char('c') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                    // Ctrl+C to cancel search
+                    self.search_query.clear();
+                    self.exit_search_mode();
+                }
+                KeyCode::Char('u') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                    // Ctrl+U to clear line (unix-style)
+                    self.search_query.clear();
+                }
+                KeyCode::Char('a') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                    // Ctrl+A - beginning of line (no-op for append-only, but consistent)
+                }
+                KeyCode::Char('e') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                    // Ctrl+E - end of line (default behavior)
+                }
+                KeyCode::Backspace => {
+                    self.search_query.pop();
+                }
+                KeyCode::Char(c) => {
+                    self.search_query.push(c);
+                }
+                _ => {}
+            }
+            return;
+        }
+        
+        // Normal mode keys
+        match key.code {
             KeyCode::Char('q') => self.exit(),
             KeyCode::Char('j') | KeyCode::Down => self.move_selection(1),
             KeyCode::Char('k') | KeyCode::Up => self.move_selection(-1),
             KeyCode::Char('/') => self.enter_search_mode(),
-            KeyCode::Esc if self.search_mode => self.exit_search_mode(),
-            KeyCode::Enter if self.search_mode => self.exit_search_mode(),
-            KeyCode::Char(c) if self.search_mode => self.search_query.push(c),
             KeyCode::Char('c') => self.toggle_show_code(),
             KeyCode::Char('y') if self.show_code => self.yank_code(),
             _ => {}
@@ -99,11 +144,11 @@ impl App {
         if filtered.is_empty() {
             return;
         }
-        
+
         let current_index = self.get_selected_index();
-        let new_index = (current_index as isize + delta)
-            .clamp(0, filtered.len() as isize - 1) as usize;
-        
+        let new_index =
+            (current_index as isize + delta).clamp(0, filtered.len() as isize - 1) as usize;
+
         // Store the UUID of the newly selected entry
         self.selected_entry_id = Some(filtered[new_index].uuid);
     }
@@ -123,9 +168,7 @@ impl App {
 
     fn yank_code(&mut self) {
         if let Some(code) = self.yank_current_code() {
-            if let Ok(mut clipboard) = arboard::Clipboard::new() {
-                let _ = clipboard.set_text(&code);
-            }
+            let _ = self.clipboard.0.set_text(&code);
         }
     }
 
@@ -149,9 +192,7 @@ impl App {
     }
 
     pub fn yank_current_code(&self) -> Option<String> {
-        let filtered = self.filtered_entries();
-        let selected_index = self.get_selected_index();
-        filtered.get(selected_index)
+        self.get_selected_entry()
             .and_then(|entry| crate::otp::generate_code(entry).ok())
             .map(|code| code.value)
     }
@@ -165,7 +206,8 @@ impl App {
 
     fn filter_by_property<'a>(&'a self, prop: &str, query: &str) -> Vec<&'a Entry> {
         let mut matcher = Matcher::new(Config::DEFAULT);
-        self.entries.iter()
+        self.entries
+            .iter()
             .filter(|e| {
                 if prop.starts_with("iss") {
                     return nucleo_match(query, &e.issuer, &mut matcher);
@@ -193,20 +235,33 @@ impl App {
         F: Fn(&Entry) -> &str,
     {
         let mut matcher = Matcher::new(Config::DEFAULT);
-        let pattern = Pattern::new(query, CaseMatching::Ignore, Normalization::Smart, nucleo::pattern::AtomKind::Fuzzy);
+        let pattern = Pattern::new(
+            query,
+            CaseMatching::Ignore,
+            Normalization::Smart,
+            nucleo::pattern::AtomKind::Fuzzy,
+        );
         let mut buf = Vec::new();
-        self.entries.iter()
+        self.entries
+            .iter()
             .filter(|e| {
                 buf.clear();
                 let text = Utf32Str::new(field_extractor(e), &mut buf);
-                pattern.indices(text, &mut matcher, &mut Vec::new()).is_some()
+                pattern
+                    .indices(text, &mut matcher, &mut Vec::new())
+                    .is_some()
             })
             .collect()
     }
 }
 
 fn nucleo_match(pattern: &str, text: &str, matcher: &mut Matcher) -> bool {
-    let p = Pattern::new(pattern, CaseMatching::Ignore, Normalization::Smart, nucleo::pattern::AtomKind::Fuzzy);
+    let p = Pattern::new(
+        pattern,
+        CaseMatching::Ignore,
+        Normalization::Smart,
+        nucleo::pattern::AtomKind::Fuzzy,
+    );
     let mut buf = Vec::new();
     let text = Utf32Str::new(text, &mut buf);
     p.indices(text, matcher, &mut Vec::new()).is_some()
