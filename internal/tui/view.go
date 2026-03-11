@@ -18,8 +18,7 @@ var (
 	selectedStyle = lipgloss.NewStyle().
 			Bold(true).
 			Foreground(lipgloss.Color("0")).
-			Background(lipgloss.Color("13")).
-			Padding(0, 1)
+			Background(lipgloss.Color("4"))
 
 	dimStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("8"))
