@@ -22,10 +22,32 @@ go build -o aegis-cli ./cmd/aegis-cli
 ## Usage
 
 ```bash
-./aegis-cli <path-to-vault.json>
+./aegis-cli <path-to-vault.json> [-timeout duration]
 ```
 
 You will be prompted to enter your vault password.
+
+### Options
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `-timeout` | `60s` | Auto-exit after duration of inactivity (e.g., `-timeout 30s`, `-timeout 2m`) |
+
+### Examples
+
+```bash
+# Default 60 second timeout
+./aegis-cli vault.json
+
+# 30 second timeout
+./aegis-cli vault.json -timeout 30s
+
+# 2 minute timeout
+./aegis-cli vault.json -timeout 2m
+
+# Disable auto-exit
+./aegis-cli vault.json -timeout 0
+```
 
 ## Keybindings
 
@@ -70,6 +92,16 @@ You will be prompted to enter your vault password.
 | `c` / `esc`    | Back to table          |
 | `q` / `ctrl-c` | Quit                   |
 
+## Security
+
+### Auto-Exit
+
+The application automatically exits after 60 seconds of inactivity by default to prevent unauthorized access to your decrypted vault. This timeout can be configured using the `-timeout` flag:
+
+- Set a custom duration (e.g., `-timeout 30s` for 30 seconds)
+- Disable auto-exit entirely with `-timeout 0`
+
+Any key press resets the inactivity timer, so simply pressing a key will keep the session active. A warning message appears in the last 10 seconds before auto-exit.
 
 ## Requirements
 
