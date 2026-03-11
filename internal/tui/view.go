@@ -77,7 +77,7 @@ func (m Model) tableView() string {
 	b.WriteString("\n\n")
 
 	// Table header
-	header := fmt.Sprintf("%-12s %-12s %-20s %-15s %-6s",
+	header := fmt.Sprintf("%-12s %-12s %-20s %-10s %-6s",
 		"ISSUER", "NAME", "NOTE", "CODE", "TIME")
 	b.WriteString(dimStyle.Render(header))
 	b.WriteString("\n")
@@ -119,7 +119,7 @@ func (m Model) formatEntryRow(entry vault.Entry, index int) string {
 	}
 
 	// pad 22 because of 5 extra bytes for ANSI codes
-	return fmt.Sprintf("%-12s %-12s %-20s %-22s %-6s",
+	return fmt.Sprintf("%-12s %-12s %-20s %-17s %-6s",
 		truncate(entry.Issuer, 20),
 		truncate(entry.Name, 20),
 		truncate(note, 20),
