@@ -58,7 +58,7 @@ fn prompt_password() -> io::Result<String> {
     }
     
     disable_raw_mode()?;
-    println!(); // New line after password
+    println!();
     
     Ok(password)
 }

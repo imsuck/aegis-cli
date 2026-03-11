@@ -40,34 +40,29 @@ impl App {
         let filtered = self.filtered_entries();
         let selected_index = self.get_selected_index();
 
-        // Calculate max widths for proper column alignment
-        let max_issuer_len = filtered
-            .iter()
-            .map(|e| e.issuer.len())
-            .max()
-            .unwrap_or(0)
-            .min(30); // Cap at 30 chars
-
-        let max_name_len = filtered
-            .iter()
-            .map(|e| e.name.len())
-            .max()
-            .unwrap_or(0)
-            .min(20); // Cap at 20 chars
+        // Calculate max widths for proper column alignment (single pass)
+        let (max_issuer_len, max_name_len) = filtered.iter().fold((0, 0), |(max_iss, max_name), e| {
+            (max_iss.max(e.issuer.len().min(30)), max_name.max(e.name.len().min(20)))
+        });
 
         let rows: Vec<Row> = filtered
             .iter()
             .enumerate()
             .map(|(i, entry)| {
-                let code_info = if let Ok(code) = generate_code(entry) {
-                    if !self.show_code {
+                // Only generate code for selected entry when show_code is enabled
+                // For other entries, use static placeholder to avoid crypto overhead
+                let code_info = if self.show_code && i == selected_index {
+                    if let Ok(code) = generate_code(entry) {
                         let masked = "*".repeat(code.value.len());
                         format!("{} | {}s", masked, code.period_remaining)
                     } else {
-                        format!("{} | {}s", code.value, code.period_remaining)
+                        "****** | --s".to_owned()
                     }
-                } else {
+                } else if self.show_code {
+                    // Non-selected entries: static placeholder (no crypto call)
                     "****** | --s".to_owned()
+                } else {
+                    String::new()
                 };
 
                 let note_preview = if entry.note.len() > 20 {
@@ -99,7 +94,7 @@ impl App {
             Constraint::Length(max_issuer_len as u16 + 2),
             Constraint::Length(max_name_len as u16 + 2),
             Constraint::Length(22),  // note column
-            Constraint::Length(100), // code column
+            Constraint::Length(15), // code column
         ];
 
         let table = Table::new(rows, widths)
