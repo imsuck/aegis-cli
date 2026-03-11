@@ -16,16 +16,14 @@ var (
 			Padding(0, 1)
 
 	selectedStyle = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(lipgloss.Color("0")).
-			Background(lipgloss.Color("4"))
+			Foreground(lipgloss.Color("4")).
+			Underline(true)
 
 	dimStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("8"))
 
 	codeStyle = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(lipgloss.Color("10"))
+			Bold(true)
 
 	timerGoodStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("10"))
@@ -79,17 +77,17 @@ func (m Model) tableView() string {
 	b.WriteString("\n\n")
 
 	// Table header
-	header := fmt.Sprintf("%-20s %-20s %-20s %-10s %-6s",
+	header := fmt.Sprintf("%-20s %-20s %-30s %-15s %-6s",
 		"ISSUER", "NAME", "NOTE", "CODE", "TIME")
 	b.WriteString(dimStyle.Render(header))
 	b.WriteString("\n")
-	b.WriteString(strings.Repeat("─", 78))
+	b.WriteString(strings.Repeat("─", 93))
 	b.WriteString("\n")
 
 	// Entries
 	for i, entry := range m.filteredEntries {
 		if i == m.cursor {
-			b.WriteString(selectedStyle.Render(m.formatSelectedRow(entry, i)))
+			b.WriteString(selectedStyle.Render(m.formatEntryRow(entry, i)))
 		} else {
 			b.WriteString(m.formatEntryRow(entry, i))
 		}
@@ -120,34 +118,12 @@ func (m Model) formatEntryRow(entry vault.Entry, index int) string {
 		note = note[:15] + "..."
 	}
 
-	return fmt.Sprintf("%-20s %-20s %-20s %-20s %-6s",
+	// pad 22 because of 5 extra bytes for ANSI codes
+	return fmt.Sprintf("%-20s %-20s %-30s %-22s %-6s",
 		truncate(entry.Issuer, 20),
 		truncate(entry.Name, 20),
 		truncate(note, 20),
 		codeStyle.Render(code),
-		formatTimer(remaining),
-	)
-}
-
-func (m Model) formatSelectedRow(entry vault.Entry, index int) string {
-	code := m.getCodeForEntry(index)
-	remaining := m.getRemainingTime(index)
-
-	note := entry.Note
-	if len(note) > 18 {
-		note = note[:15] + "..."
-	}
-
-	// For selected row, use black text for code as well
-	selectedCodeStyle := lipgloss.NewStyle().
-		Bold(true).
-		Foreground(lipgloss.Color("0"))
-
-	return fmt.Sprintf("%-20s %-20s %-20s %-20s %-6s",
-		truncate(entry.Issuer, 20),
-		truncate(entry.Name, 20),
-		truncate(note, 20),
-		selectedCodeStyle.Render(code),
 		formatTimer(remaining),
 	)
 }
