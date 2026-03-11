@@ -90,11 +90,10 @@ func (m Model) tableView() string {
 
 	// Entries
 	for i, entry := range m.filteredEntries {
-		row := m.formatEntryRow(entry, i)
 		if i == m.cursor {
-			b.WriteString(selectedStyle.Render(row))
+			b.WriteString(selectedStyle.Render(m.formatSelectedRow(entry, i)))
 		} else {
-			b.WriteString(row)
+			b.WriteString(m.formatEntryRow(entry, i))
 		}
 		b.WriteString("\n")
 	}
@@ -124,6 +123,29 @@ func (m Model) formatEntryRow(entry vault.Entry, index int) string {
 		truncate(entry.Name, 20),
 		truncate(note, 20),
 		codeStyle.Render(code),
+		formatTimer(remaining),
+	)
+}
+
+func (m Model) formatSelectedRow(entry vault.Entry, index int) string {
+	code := m.getCodeForEntry(index)
+	remaining := m.getRemainingTime(index)
+
+	note := entry.Note
+	if len(note) > 18 {
+		note = note[:15] + "..."
+	}
+
+	// For selected row, use black text for code as well
+	selectedCodeStyle := lipgloss.NewStyle().
+		Bold(true).
+		Foreground(lipgloss.Color("0"))
+
+	return fmt.Sprintf("%-20s %-20s %-20s %-10s %s",
+		truncate(entry.Issuer, 20),
+		truncate(entry.Name, 20),
+		truncate(note, 20),
+		selectedCodeStyle.Render(code),
 		formatTimer(remaining),
 	)
 }
