@@ -120,7 +120,7 @@ func (m Model) formatEntryRow(entry vault.Entry, index int) string {
 		note = note[:15] + "..."
 	}
 
-	return fmt.Sprintf("%-20s %-20s %-20s %-10s %s",
+	return fmt.Sprintf("%-20s %-20s %-20s %-10s %-6s",
 		truncate(entry.Issuer, 20),
 		truncate(entry.Name, 20),
 		truncate(note, 20),
@@ -143,7 +143,7 @@ func (m Model) formatSelectedRow(entry vault.Entry, index int) string {
 		Bold(true).
 		Foreground(lipgloss.Color("0"))
 
-	return fmt.Sprintf("%-20s %-20s %-20s %-10s %s",
+	return fmt.Sprintf("%-20s %-20s %-20s %-10s %-6s",
 		truncate(entry.Issuer, 20),
 		truncate(entry.Name, 20),
 		truncate(note, 20),
@@ -192,7 +192,9 @@ func formatTimer(remaining int) string {
 	default:
 		style = timerBadStyle
 	}
-	return style.Render(fmt.Sprintf("%2ds", remaining))
+	// Format with fixed width (5 chars: "  25s") then apply style
+	timerStr := fmt.Sprintf("%4ds", remaining)
+	return style.Render(timerStr)
 }
 
 // getCodeForEntry generates the current TOTP code for an entry
