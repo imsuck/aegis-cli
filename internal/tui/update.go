@@ -50,6 +50,7 @@ func (m Model) handleKeyPress(key tea.KeyMsg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) handlePasswordKey(key tea.KeyMsg) (tea.Model, tea.Cmd) {
+	m.recordActivity()
 	switch key.Type {
 	case tea.KeyEnter:
 		return m, submitPassword(m.passwordInput.Value())
@@ -63,6 +64,7 @@ func (m Model) handlePasswordKey(key tea.KeyMsg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) handleTableKey(key tea.KeyMsg) (tea.Model, tea.Cmd) {
+	m.recordActivity()
 	switch key.String() {
 	case "q", "ctrl+c":
 		return m, tea.Quit
@@ -95,6 +97,7 @@ func (m Model) handleTableKey(key tea.KeyMsg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) handleSearchKey(key tea.KeyMsg) (tea.Model, tea.Cmd) {
+	m.recordActivity()
 	switch key.Type {
 	case tea.KeyEsc:
 		m.mode = ModeTable
@@ -129,6 +132,12 @@ func (m Model) handleSearchKey(key tea.KeyMsg) (tea.Model, tea.Cmd) {
 	m.cursor = 0
 
 	return m, cmd
+}
+
+// recordActivity updates the last activity timestamp
+func (m *Model) recordActivity() {
+	m.lastActivity = time.Now()
+	m.warningShown = false
 }
 
 // deleteWordBackward deletes the word before the cursor
