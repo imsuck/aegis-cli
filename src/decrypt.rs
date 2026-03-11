@@ -49,16 +49,16 @@ fn derive_master_key(slots: &[&Slot], password: &[u8]) -> Result<Vec<u8>, Decryp
     for slot in slots {
         let salt = hex::decode(&slot.salt)
             .map_err(|e| DecryptError::HexError(e.to_string()))?;
-        
-        // scrypt uses log_n (log2 of N), so N=32768 -> log_n=15
-        let log_n = (slot.n as f64).log2() as u8;
-        let scrypt_params = ScryptParams::new(log_n, slot.r, slot.p, 32)
+
+        // Use scrypt defaults matching Aegis (N=32768, r=8, p=1, key_len=32)
+        // N=32768 = 2^15, so log_n = 15
+        let scrypt_params = ScryptParams::new(15, 8, 1, 32)
             .map_err(|e| DecryptError::ScryptError(e.to_string()))?;
-        
+
         let mut derived_key = [0u8; 32];
         scrypt(password, &salt, &scrypt_params, &mut derived_key)
             .map_err(|e| DecryptError::ScryptError(e.to_string()))?;
-        
+
         // Try to decrypt the master key with this derived key
         let key_bytes = hex::decode(&slot.key)
             .map_err(|e| DecryptError::HexError(e.to_string()))?;
@@ -66,19 +66,19 @@ fn derive_master_key(slots: &[&Slot], password: &[u8]) -> Result<Vec<u8>, Decryp
             .map_err(|e| DecryptError::HexError(e.to_string()))?;
         let tag = hex::decode(&slot.key_params.tag)
             .map_err(|e| DecryptError::HexError(e.to_string()))?;
-        
+
         let cipher = Aes256Gcm::new_from_slice(&derived_key)
             .map_err(|e| DecryptError::CipherError(e.to_string()))?;
-        
+
         let mut encrypted_key = key_bytes;
         encrypted_key.extend_from_slice(&tag);
-        
+
         let nonce = Nonce::from_slice(&nonce);
         if let Ok(master_key) = cipher.decrypt(nonce, encrypted_key.as_ref()) {
             return Ok(master_key);
         }
     }
-    
+
     Err(DecryptError::InvalidPassword)
 }
 
