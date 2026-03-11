@@ -98,9 +98,6 @@ func (m Model) handleSearchKey(key tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch key.Type {
 	case tea.KeyEsc:
 		m.mode = ModeTable
-		m.searchInput.SetValue("")
-		m.filteredEntries = m.entries
-		m.cursor = 0
 		return m, nil
 	case tea.KeyEnter:
 		m.mode = ModeTable

@@ -77,11 +77,11 @@ func (m Model) tableView() string {
 	b.WriteString("\n\n")
 
 	// Table header
-	header := fmt.Sprintf("%-12s %-12s %-20s %-10s %-6s",
+	header := fmt.Sprintf("%-12s %-12s %-20s %-11s %-6s",
 		"ISSUER", "NAME", "NOTE", "CODE", "TIME")
 	b.WriteString(dimStyle.Render(header))
 	b.WriteString("\n")
-	b.WriteString(strings.Repeat("─", 67))
+	b.WriteString(strings.Repeat("─", 63))
 	b.WriteString("\n")
 
 	// Entries
@@ -114,15 +114,15 @@ func (m Model) formatEntryRow(entry vault.Entry, index int) string {
 	remaining := m.getRemainingTime(index)
 
 	note := entry.Note
-	if len(note) > 18 {
-		note = note[:15] + "..."
+	if len(note) > 20 {
+		note = note[:17] + "..."
 	}
 
-	// pad 22 because of 5 extra bytes for ANSI codes
-	return fmt.Sprintf("%-12s %-12s %-20s %-17s %-6s",
+	// pad 18 because of 5 extra bytes for ANSI codes
+	return fmt.Sprintf("%-12s %-12s %-20s %-18s %-6s",
 		truncate(entry.Issuer, 20),
 		truncate(entry.Name, 20),
-		truncate(note, 20),
+		note,
 		codeStyle.Render(code),
 		formatTimer(remaining),
 	)
