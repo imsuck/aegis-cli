@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"hash"
 	"math"
+	"strings"
 	"time"
 
 	"aegis-cli/internal/vault"
@@ -17,7 +18,12 @@ import (
 // Generate generates a TOTP code for the given entry at the specified time
 func Generate(entry vault.Entry, t time.Time) (string, error) {
 	// Decode base32 secret
-	secret, err := base32.StdEncoding.DecodeString(entry.Info.Secret)
+	// Aegis secrets may not be padded to multiple of 8, so we add padding
+	secret := entry.Info.Secret
+	if len(secret)%8 != 0 {
+		secret = secret + strings.Repeat("=", 8-len(secret)%8)
+	}
+	secretBytes, err := base32.StdEncoding.DecodeString(secret)
 	if err != nil {
 		return "", fmt.Errorf("failed to decode secret: %w", err)
 	}
@@ -36,7 +42,7 @@ func Generate(entry vault.Entry, t time.Time) (string, error) {
 	counter := uint64(t.Unix()) / uint64(period)
 
 	// Generate HOTP code
-	return generateHOTP(secret, counter, hasher, entry.Info.Digits)
+	return generateHOTP(secretBytes, counter, hasher, entry.Info.Digits)
 }
 
 // GetRemainingTime returns the seconds remaining until the next code
