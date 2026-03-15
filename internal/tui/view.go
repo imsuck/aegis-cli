@@ -129,8 +129,8 @@ func (m Model) formatEntryRow(entry vault.Entry, index int) string {
 
 	// pad 18 because of 5 extra bytes for ANSI codes
 	return fmt.Sprintf("%-12s %-12s %-20s %-18s %-6s",
-		truncate(entry.Issuer, 20),
-		truncate(entry.Name, 20),
+		truncate(entry.Issuer, 12),
+		truncate(entry.Name, 12),
 		note,
 		codeStyle.Render(code),
 		formatTimer(remaining),
